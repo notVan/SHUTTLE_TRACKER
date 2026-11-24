@@ -6,9 +6,9 @@
   (IMEI, GPS, speed, battery) and exposes them over REST + WebSocket on :8082.
 -->
 <properties>
-    <!-- Store Traccar data in the `traccar` database created by database/init/00_traccar_database.sql -->
-    <entry key='database.driver'>org.postgresql.Driver</entry>
-    <entry key='database.url'>jdbc:postgresql://postgres:5432/traccar</entry>
+    <!-- Store Traccar data in the `traccar` database created by database/init/00_databases_and_logins.sql -->
+    <entry key='database.driver'>com.microsoft.sqlserver.jdbc.SQLServerDriver</entry>
+    <entry key='database.url'>jdbc:sqlserver://sqlserver:1433;databaseName=traccar;encrypt=true;trustServerCertificate=true</entry>
     <entry key='database.user'>traccar</entry>
     <entry key='database.password'>traccar</entry>
 

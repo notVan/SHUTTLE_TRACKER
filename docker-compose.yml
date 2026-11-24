@@ -1,32 +1,51 @@
 # Infrastructure for the Shuttle Tracker (solar GPS fleet tracker).
-# Starts the database and the Traccar decoding server. The backend and frontend
-# are run from their own folders (mvnw / dotnet run) during development.
+# Starts SQL Server, runs the database/init scripts once, then starts the Traccar decoding server.
+# The backend and frontend are run from their own folders (mvnw / dotnet run) during development.
 #
-#   docker compose up -d postgres traccar
+#   docker compose up -d
 #
-# No Docker? See README "Running it without Docker" (local PostgreSQL + Traccar Windows installer).
+# Browse the data in SSMS: server "localhost,1433", SQL Server Authentication,
+# login sa / Shuttle#Dev2026 (or shuttle / shuttle for just the app database).
+# No Docker? See README "Running it" (local SQL Server + Traccar Windows installer).
 
 services:
-  postgres:
-    image: postgres:17
-    container_name: shuttle-postgres
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: shuttle-sqlserver
     environment:
-      POSTGRES_DB: shuttle
-      POSTGRES_USER: shuttle
-      POSTGRES_PASSWORD: shuttle
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: "Shuttle#Dev2026"   # dev only; SQL Server requires a complex sa password
     ports:
-      - "5432:5432"
+      - "1433:1433"
     volumes:
-      # 00_* creates the separate `traccar` database, 01_* / 02_* build the app schema in `shuttle`
-      - ./database/init:/docker-entrypoint-initdb.d:ro
-      - postgres-data:/var/lib/postgresql/data
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     restart: unless-stopped
+
+  # SQL Server has no init-script folder like Postgres, so this one-off container runs them.
+  # Every script checks for existing objects, so it is safe on every `up`.
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./database/init:/init:ro
+    entrypoint: ["/bin/bash", "-c", "for f in /init/*.sql; do echo \"running $$f\"; /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'Shuttle#Dev2026' -C -b -i \"$$f\" || exit 1; done"]
+    restart: "no"
 
   traccar:
     image: traccar/traccar:latest
     container_name: shuttle-traccar
     depends_on:
-      - postgres
+      sqlserver-init:
+        condition: service_completed_successfully
     ports:
       - "8082:8082"   # Traccar web UI + REST API + /api/socket (used by the backend)
       - "5199:5199"   # Topin protocol: ZX303 trackers connect here over 2G GPRS
@@ -37,5 +56,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres-data:
+  sqlserver-data:
   traccar-logs:

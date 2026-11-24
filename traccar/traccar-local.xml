@@ -3,10 +3,11 @@
 <!--
   Same as traccar.xml, for Traccar installed natively on Windows (no Docker).
   Copy over C:\Program Files\Traccar\conf\traccar.xml, then restart the "traccar" Windows service.
+  Needs SQL Server listening on TCP 1433 (not LocalDB).
 -->
 <properties>
-    <entry key='database.driver'>org.postgresql.Driver</entry>
-    <entry key='database.url'>jdbc:postgresql://localhost:5432/traccar</entry>
+    <entry key='database.driver'>com.microsoft.sqlserver.jdbc.SQLServerDriver</entry>
+    <entry key='database.url'>jdbc:sqlserver://localhost:1433;databaseName=traccar;encrypt=true;trustServerCertificate=true</entry>
     <entry key='database.user'>traccar</entry>
     <entry key='database.password'>traccar</entry>
 
