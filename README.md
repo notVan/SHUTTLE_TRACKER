@@ -2,23 +2,24 @@
 
 A GPS tracker on each campus shuttle plus a live map app, so students see where shuttles are and when the next one arrives, and administrators get trip logs that keep drivers accountable.
 
-Solar-powered ZX303 GPS trackers on campus shuttles feed a Traccar server. A Spring Boot API, a
-PostgreSQL database and an ASP.NET Core MVC dashboard with a live Leaflet map sit on top.
+Solar-powered ZX303 GPS trackers on campus shuttles feed a Traccar server. A Spring Boot API and a
+PostgreSQL database sit on top, with an ASP.NET Core MVC frontend for the dashboard.
 Full design: [docs/](docs/).
 
-**Status: the pipeline is wired end to end, but the features are not finished.** Every layer exists and
-talks to the layer next to it. The business features (ETA, geofences, history, login) are
-marked `TODO Stage 3` in the code.
+**Status: the backend pipeline is wired, but the features are not finished.** Device → Traccar →
+backend → database is connected. The business features (ETA, geofences, history, login) are
+marked `TODO Stage 3` in the code. **The frontend is the blank default MVC template** (Welcome page
+only). The dashboard pages have not been built yet.
 
 ## Layers and folders
 
 Each layer has its own top-level folder and only talks to the layer next to it.
 
 ```
- Browser (Leaflet map)
-   │  HTTPS                                   ▲ WebSocket  ws://:8080/ws/fleet  (live positions)
- frontend/      ASP.NET Core MVC (C#)      dashboard + vehicle register          :5020 / :7020
-   │  REST
+ Browser
+   │  HTTPS
+ frontend/      ASP.NET Core MVC (C#)      default template, not wired yet       :5020 / :7020
+   ┆  REST (planned)
  backend/       Spring Boot (Java 25)      FLEET.OPS API: vehicles, routes, live :8080
    │  JPA                    │  REST + WebSocket  (/api/session, /api/devices, /api/socket)
  database/      PostgreSQL   traccar/      Traccar server: decodes Topin frames  :8082 (UI/API)
@@ -32,7 +33,7 @@ Each layer has its own top-level folder and only talks to the layer next to it.
 | `traccar/` | Protocol bridge | `traccar.xml`. Traccar decodes the ZX303 Topin stream (IMEI, GPS, speed, battery) and stores raw positions. |
 | `database/` | Persistence | `init/*.sql`: the `traccar` database (Traccar fills it) and the `shuttle` app schema (routes, stops, vehicles ⇄ IMEI). |
 | `backend/` | Application / API | Spring Boot app. See its internal layers below. |
-| `frontend/` | Presentation | MVC app. `Controllers/` → `Services/BackendApiClient.cs` → backend. `wwwroot/js/fleet-map.js` subscribes to the live feed. |
+| `frontend/` | Presentation | The default ASP.NET Core MVC template (Welcome and Privacy pages). Not connected to the backend yet. |
 | `scripts/` | Testing | `send-test-position.ps1` fakes a moving shuttle through Traccar's OsmAnd port (5055). No hardware needed. |
 | `docs/` | — | Project presentation. |
 | `docker-compose.yml` | — | Runs the database and Traccar. |
@@ -57,11 +58,11 @@ Each layer has its own top-level folder and only talks to the layer next to it.
    `{"positions":[…]}` on its `/api/socket`.
 3. **`TraccarSocketListener`** receives it and passes it to **`FleetService`**. That maps Traccar `deviceId` →
    `vehicles.traccar_device_id`, converts knots to km/h, and keeps the latest fix per shuttle.
-4. **`WebSocketLiveFeed`** broadcasts `{"type":"position","data":{…}}` to every open dashboard.
-5. **`fleet-map.js`** moves the marker. On page load the MVC `HomeController` fetches the initial state over REST.
+4. **`WebSocketLiveFeed`** broadcasts `{"type":"position","data":{…}}` on `/ws/fleet`. No page listens to it
+   yet; a future frontend map would subscribe here and load the initial state from `GET /api/fleet/live`.
 
-The other direction: registering a shuttle on the **Vehicles** page goes frontend → `POST /api/vehicles` →
-`VehicleService` → `TraccarClient.createDevice`. Traccar then accepts that IMEI's frames.
+The other direction: `POST /api/vehicles` → `VehicleService` → `TraccarClient.createDevice`. Traccar then accepts
+that IMEI's frames. Until the frontend has a form for it, call the endpoint directly.
 
 ### REST API
 
@@ -95,17 +96,17 @@ The other direction: registering a shuttle on the **Vehicles** page goes fronten
    ```
    On start it links the sample vehicle's IMEI to a Traccar device and opens the live socket.
 4. **Frontend:** open `Shuttle Tracker.slnx` in Visual Studio and run, or `dotnet run --project frontend`.
-   Then go to http://localhost:5020.
-5. **Fake a shuttle:** run `.\scripts\send-test-position.ps1`. The marker should move along the sample route.
+   Then go to http://localhost:5020. You should see the default **Welcome** page.
+5. **Fake a shuttle:** run `.\scripts\send-test-position.ps1`. Check it arrived with `GET http://localhost:8080/api/fleet/live`.
 
 ## Known open items
 
-- **Not yet run end to end.** Backend and frontend compile. Traccar and the database weren't available
-  when this was scaffolded, so steps 1–5 above are untested.
-- **Live map goes browser → backend directly.** The WebSocket (`/ws/fleet`) skips the MVC frontend.
-  `live-feed.allowed-origins` limits which origins may connect. If the layering must be strict, add a
-  SignalR hub to the frontend that relays the backend feed.
-- **No authentication yet.** The API and dashboard are open. Add JWT the same way as the Smart Door
+- **Not yet run end to end.** Backend and frontend compile, and the frontend's Welcome page runs. Traccar and
+  the database weren't available when this was scaffolded, so the backend steps above are untested.
+- **Frontend is a blank template.** Still to build: a live map page (Leaflet or similar), a vehicle register
+  page, and a typed HttpClient for the backend API. `live-feed.allowed-origins` in the backend already allows
+  `localhost:5020` / `7020` to connect to `/ws/fleet`.
+- **No authentication yet.** The API is open. Add JWT the same way as the Smart Door
   backend before deploying.
 - **Stage 3 features (TODOs in code):** next stop and ETA, geofence alerts, online/offline from Traccar's
   `devices` messages, trails/history, route editing in the UI.
