@@ -1,44 +1,8 @@
-@model DashboardViewModel
-@{
-    ViewData["Title"] = "Live map";
-}
-@section Head {
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+﻿@{
+    ViewData["Title"] = "Home Page";
 }
 
-<div class="dashboard">
-    <aside>
-        @if (Model.BackendError is not null)
-        {
-            <div class="alert">Backend unreachable (@Model.BackendError). Is it running on :8080?</div>
-        }
-        <h2>Fleet <span id="feed-status" class="pill">connecting…</span></h2>
-        <ul id="vehicle-list">
-            @foreach (var v in Model.Vehicles)
-            {
-                <li data-vehicle-id="@v.Id">
-                    <b>@v.Name</b> <small>@v.Plate</small>
-                    <div class="muted">@(v.RouteName ?? "No route")@(v.LinkedToTraccar ? "" : " · not linked to Traccar yet")</div>
-                    <div class="live muted">waiting for first fix…</div>
-                </li>
-            }
-        </ul>
-        @if (Model.Vehicles.Count == 0 && Model.BackendError is null)
-        {
-            <p class="muted">No vehicles yet. <a asp-controller="Vehicles" asp-action="Index">Register one</a>.</p>
-        }
-    </aside>
-    <div id="map"></div>
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
 </div>
-
-@section Scripts {
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        window.fleetConfig = {
-            liveFeedUrl: @Json.Serialize(Model.LiveFeedUrl),
-            routes: @Json.Serialize(Model.Routes),
-            positions: @Json.Serialize(Model.Positions)
-        };
-    </script>
-    <script src="~/js/fleet-map.js" asp-append-version="true"></script>
-}
