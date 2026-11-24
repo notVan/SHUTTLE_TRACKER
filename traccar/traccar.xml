@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE properties SYSTEM 'http://java.sun.com/dtd/properties.dtd'>
+<!--
+  Traccar config used by docker-compose (mounted at /opt/traccar/conf/traccar.xml).
+  Traccar is the protocol bridge: it accepts the ZX303's Topin binary frames, decodes them
+  (IMEI, GPS, speed, battery) and exposes them over REST + WebSocket on :8082.
+-->
+<properties>
+    <!-- Store Traccar data in the `traccar` database created by database/init/00_traccar_database.sql -->
+    <entry key='database.driver'>org.postgresql.Driver</entry>
+    <entry key='database.url'>jdbc:postgresql://postgres:5432/traccar</entry>
+    <entry key='database.user'>traccar</entry>
+    <entry key='database.password'>traccar</entry>
+
+    <!-- ZX303 trackers: SMS  DOMAIN#<server-ip>#5199#  -->
+    <entry key='topin.port'>5199</entry>
+    <!-- Test positions without hardware (scripts/send-test-position.ps1) -->
+    <entry key='osmand.port'>5055</entry>
+</properties>

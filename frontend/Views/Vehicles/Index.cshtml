@@ -1,0 +1,49 @@
+@model VehiclesPageModel
+@{
+    ViewData["Title"] = "Vehicles";
+}
+
+<div class="page">
+    <h1>Vehicles</h1>
+    @if (Model.Error is not null)
+    {
+        <div class="alert">@Model.Error</div>
+    }
+
+    <table>
+        <thead>
+            <tr><th>Name</th><th>Plate</th><th>Tracker IMEI</th><th>Route</th><th>Traccar</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var v in Model.Vehicles)
+            {
+                <tr>
+                    <td>@v.Name</td>
+                    <td>@v.Plate</td>
+                    <td><code>@v.Imei</code></td>
+                    <td>@(v.RouteName ?? "—")</td>
+                    <td>@(v.LinkedToTraccar ? "linked" : "not linked yet")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h2>Register a shuttle</h2>
+    <form asp-action="Create" method="post" class="form">
+        <label>Name <input asp-for="Form.Name" placeholder="Shuttle 02" /></label>
+        <span asp-validation-for="Form.Name" class="error"></span>
+        <label>Plate <input asp-for="Form.Plate" placeholder="GR 7310-23" /></label>
+        <label>Tracker IMEI <input asp-for="Form.Imei" placeholder="15 digits" /></label>
+        <span asp-validation-for="Form.Imei" class="error"></span>
+        <label>Route
+            <select asp-for="Form.RouteId">
+                <option value="">— none —</option>
+                @foreach (var r in Model.Routes)
+                {
+                    <option value="@r.Id">@r.Name</option>
+                }
+            </select>
+        </label>
+        <button type="submit">Register</button>
+    </form>
+</div>

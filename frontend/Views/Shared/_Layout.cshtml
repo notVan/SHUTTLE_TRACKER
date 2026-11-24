@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · FLEET.OPS</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Head", required: false)
+</head>
+<body>
+    <header>
+        <a class="brand" asp-controller="Home" asp-action="Index">FLEET<span>.OPS</span></a>
+        <nav>
+            <a asp-controller="Home" asp-action="Index">Live map</a>
+            <a asp-controller="Vehicles" asp-action="Index">Vehicles</a>
+        </nav>
+    </header>
+    <main>
+        @RenderBody()
+    </main>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

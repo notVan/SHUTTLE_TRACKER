@@ -1,0 +1,41 @@
+# Infrastructure for the Shuttle Tracker (solar GPS fleet tracker).
+# Starts the database and the Traccar decoding server. The backend and frontend
+# are run from their own folders (mvnw / dotnet run) during development.
+#
+#   docker compose up -d postgres traccar
+#
+# No Docker? See README "Running it without Docker" (local PostgreSQL + Traccar Windows installer).
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: shuttle-postgres
+    environment:
+      POSTGRES_DB: shuttle
+      POSTGRES_USER: shuttle
+      POSTGRES_PASSWORD: shuttle
+    ports:
+      - "5432:5432"
+    volumes:
+      # 00_* creates the separate `traccar` database, 01_* / 02_* build the app schema in `shuttle`
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  traccar:
+    image: traccar/traccar:latest
+    container_name: shuttle-traccar
+    depends_on:
+      - postgres
+    ports:
+      - "8082:8082"   # Traccar web UI + REST API + /api/socket (used by the backend)
+      - "5199:5199"   # Topin protocol: ZX303 trackers connect here over 2G GPRS
+      - "5055:5055"   # OsmAnd protocol: scripts/send-test-position.ps1 (testing without hardware)
+    volumes:
+      - ./traccar/traccar.xml:/opt/traccar/conf/traccar.xml:ro
+      - traccar-logs:/opt/traccar/logs
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  traccar-logs:

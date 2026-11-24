@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE properties SYSTEM 'http://java.sun.com/dtd/properties.dtd'>
+<!--
+  Same as traccar.xml, for Traccar installed natively on Windows (no Docker).
+  Copy over C:\Program Files\Traccar\conf\traccar.xml, then restart the "traccar" Windows service.
+-->
+<properties>
+    <entry key='database.driver'>org.postgresql.Driver</entry>
+    <entry key='database.url'>jdbc:postgresql://localhost:5432/traccar</entry>
+    <entry key='database.user'>traccar</entry>
+    <entry key='database.password'>traccar</entry>
+
+    <entry key='topin.port'>5199</entry>
+    <entry key='osmand.port'>5055</entry>
+</properties>
