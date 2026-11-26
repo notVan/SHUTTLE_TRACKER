@@ -1,11 +1,10 @@
-# .NET (frontend)
-.vs/
-frontend/bin/
-frontend/obj/
-*.user
+# React frontend
+frontend/node_modules/
+frontend/dist/
 
 # Java (backend)
 backend/target/
 .idea/
+.vs/
 
 .env

@@ -3,13 +3,13 @@
 A GPS tracker on each campus shuttle plus a live map app, so students see where shuttles are and when the next one arrives, and administrators get trip logs that keep drivers accountable.
 
 Solar-powered ZX303 GPS trackers on campus shuttles feed a Traccar server. A Spring Boot API and a
-SQL Server database (managed with SQL Server Management Studio) sit on top, with an ASP.NET Core MVC frontend for the dashboard.
+SQL Server database (managed with SQL Server Management Studio) sit on top, with a React frontend for the dashboard.
 Full design: [docs/](docs/).
 
 **Status: the backend pipeline is wired, but the features are not finished.** Device → Traccar →
 backend → database is connected. The business features (ETA, geofences, history, login) are
-marked `TODO Stage 3` in the code. **The frontend is the blank default MVC template** (Welcome page
-only). The dashboard pages have not been built yet.
+marked `TODO Stage 3` in the code. **The frontend is the blank default React (Vite) template**
+(welcome page only). The dashboard pages have not been built yet.
 
 ## Layers and folders
 
@@ -18,8 +18,8 @@ Each layer has its own top-level folder and only talks to the layer next to it.
 ```
  Browser
    │  HTTPS
- frontend/      ASP.NET Core MVC (C#)      default template, not wired yet       :5020 / :7020
-   ┆  REST (planned)
+ frontend/      React 19 + Vite (JS)       default template, not wired yet       :5020
+   ┆  /api, /ws proxied by the Vite dev server (planned use)
  backend/       Spring Boot (Java 25)      FLEET.OPS API: vehicles, routes, live :8080
    │  JPA                    │  REST + WebSocket  (/api/session, /api/devices, /api/socket)
  database/      SQL Server   traccar/      Traccar server: decodes Topin frames  :8082 (UI/API)
@@ -33,7 +33,7 @@ Each layer has its own top-level folder and only talks to the layer next to it.
 | `traccar/` | Protocol bridge | `traccar.xml`. Traccar decodes the ZX303 Topin stream (IMEI, GPS, speed, battery) and stores raw positions. |
 | `database/` | Persistence | SQL Server. `init/*.sql` (T-SQL): logins, the `traccar` database (Traccar fills it) and the `shuttle` app schema (routes, stops, vehicles ⇄ IMEI). `setup-local.ps1` runs them on a local server. Browse it with SSMS. |
 | `backend/` | Application / API | Spring Boot app. See its internal layers below. |
-| `frontend/` | Presentation | The default ASP.NET Core MVC template (Welcome and Privacy pages). Not connected to the backend yet. |
+| `frontend/` | Presentation | React 19 single-page app built with Vite (the default `create-vite` template). `vite.config.js` serves it on port 5020 and forwards `/api` and `/ws` to the backend on 8080. No pages call the backend yet. |
 | `scripts/` | Testing | `send-test-position.ps1` fakes a moving shuttle through Traccar's OsmAnd port (5055). No hardware needed. |
 | `docs/` | — | Project presentation. |
 | `docker-compose.yml` | — | Runs the database and Traccar. |
@@ -107,8 +107,14 @@ that IMEI's frames. Until the frontend has a form for it, call the endpoint dire
    .\mvnw spring-boot:run
    ```
    On start it links the sample vehicle's IMEI to a Traccar device and opens the live socket.
-4. **Frontend:** open `Shuttle Tracker.slnx` in Visual Studio and run, or `dotnet run --project frontend`.
-   Then go to http://localhost:5020. You should see the default **Welcome** page.
+4. **Frontend** (Node.js 20.19+ or 22.12+):
+   ```
+   cd frontend
+   npm install
+   npm run dev
+   ```
+   Then go to http://localhost:5020. You should see the default Vite + React welcome page.
+   `npm run build` writes a production bundle to `frontend/dist/`.
 5. **Fake a shuttle:** run `.\scripts\send-test-position.ps1`. Check it arrived with `GET http://localhost:8080/api/fleet/live`.
 
 ## Known open items
@@ -117,9 +123,10 @@ that IMEI's frames. Until the frontend has a form for it, call the endpoint dire
   T-SQL scripts were tested on LocalDB. The backend and Traccar haven't run against a TCP SQL Server yet.
 - **Dev passwords** (`shuttle`, `traccar`, `Shuttle#Dev2026`) are in the scripts and config. Change them
   before deploying anywhere real.
-- **Frontend is a blank template.** Still to build: a live map page (Leaflet or similar), a vehicle register
-  page, and a typed HttpClient for the backend API. `live-feed.allowed-origins` in the backend already allows
-  `localhost:5020` / `7020` to connect to `/ws/fleet`.
+- **Frontend is a blank template.** Still to build: a live map page (e.g. `react-leaflet`), a vehicle register
+  page, and API calls with `fetch('/api/...')` plus a WebSocket to `/ws/fleet`. The Vite dev server already
+  forwards both to the backend. For production, serve `frontend/dist/` behind the same origin as the backend,
+  or add CORS for `/api`.
 - **No authentication yet.** The API is open. Add JWT the same way as the Smart Door
   backend before deploying.
 - **Stage 3 features (TODOs in code):** next stop and ETA, geofence alerts, online/offline from Traccar's
